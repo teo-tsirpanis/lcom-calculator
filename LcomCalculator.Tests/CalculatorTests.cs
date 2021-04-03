@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using LcomCalculator.Core;
 using Mono.Cecil;
 using Xunit;
@@ -10,9 +9,13 @@ namespace LcomCalculator.Tests
     {
         [Theory]
         [InlineData(typeof(TestClasses.TestClass1), 2)]
+        // I had initially thought that a class with no fields should have an LCOM of zero,
+        // but actually it shouldn't; because it does not have any state, its methods are not
+        // cohesive at all; nothing stops the methods from being declared in different classes.
+        [InlineData(typeof(Calculator), 1)]
         public void Test1(Type type, int expectedLcom)
         {
-            using var asmDef = AssemblyDefinition.ReadAssembly(Assembly.GetExecutingAssembly().Location)!;
+            using var asmDef = AssemblyDefinition.ReadAssembly(type.Assembly.Location)!;
             Assert.NotNull(asmDef);
 
             var typeDef = asmDef.MainModule.GetType(type.FullName)!;
