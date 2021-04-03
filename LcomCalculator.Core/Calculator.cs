@@ -24,6 +24,8 @@ namespace LcomCalculator.Core
             from meth in type.Methods
             // Exclude methods without a body (abstract, extern etc).
             where meth.HasBody
+            // Exclude constructors.
+            where !meth.IsConstructor
             // Exclude property getters and setters.
             where !(meth.IsSpecialName && (meth.Name.StartsWith("get_") || meth.Name.StartsWith("set_")))
             select meth;
@@ -33,7 +35,6 @@ namespace LcomCalculator.Core
         /// </summary>
         public static int CalculateLackOfCohesion(TypeDefinition type)
         {
-            var methodCount = type.Methods.Count;
             var dataMembers = new List<ClassDataMember>(type.Fields.Count + type.Properties.Count);
 
             foreach (var field in GetEligibleFields(type))
@@ -41,7 +42,9 @@ namespace LcomCalculator.Core
             foreach (var property in type.Properties)
                 dataMembers.Add(new Property(property));
 
-            var methodReferenceMatrix = new BitArray[methodCount];
+            var methods = GetEligibleMethods(type).ToList();
+
+            var methodReferenceMatrix = new BitArray[methods.Count];
             for (int i = 0; i < methodReferenceMatrix.Length; i++)
             {
                 var referencedFields = new BitArray(dataMembers.Count);
@@ -51,7 +54,7 @@ namespace LcomCalculator.Core
                     {
                         if (dataMembers[j].IsUsed(instruction))
                         {
-                            referencedFields.Set(i, true);
+                            referencedFields.Set(j, true);
                             break;
                         }
                     }
@@ -61,22 +64,20 @@ namespace LcomCalculator.Core
             }
 
             // This is Q in the LCOM definition.
-            var cohesion = 0;
+            var q = 0;
+            var p = 0;
             var scratch = new BitArray(dataMembers.Count);
             for (int i = 0; i < methodReferenceMatrix.Length; i++)
-                for (int j = i; j < methodReferenceMatrix.Length - 1; j++)
+                for (int j = i + 1; j < methodReferenceMatrix.Length; j++)
                 {
                     scratch.SetAll(false);
                     var haveCommonDataAccesses =
-                        scratch.Or(methodReferenceMatrix[i]).And(methodReferenceMatrix[j]).Length != 0;
-                    if (haveCommonDataAccesses) cohesion++;
+                        scratch.Or(methodReferenceMatrix[i]).And(methodReferenceMatrix[j]).Cast<bool>().Any(x => x);
+                    if (haveCommonDataAccesses) q++;
+                    else p++;
                 }
 
-            // And this is P + Q.
-            var allMethodPairs = (methodCount * (methodCount - 1)) / 2;
-
-            // We want P - Q = (P + Q) - Q - Q, or zero if it is negative.
-            return Math.Max(allMethodPairs - 2 * cohesion, 0);
+            return Math.Max(p - q, 0);
         }
     }
 }

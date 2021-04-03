@@ -36,6 +36,9 @@ namespace LcomCalculator.Core
                 case Code.Ldfld:
                 case Code.Ldflda:
                 case Code.Stfld:
+                case Code.Ldsfld:
+                case Code.Ldsflda:
+                case Code.Stsfld:
                     return instr.Operand == _field;
                 default:
                     return false;
