@@ -19,6 +19,8 @@ namespace LcomCalculator.Core
             where meth.HasBody
             // Exclude constructors.
             where !meth.IsConstructor
+            // Exclude inherited methods.
+            where meth.DeclaringType == type
             // Exclude property getters and setters.
             where !(meth.IsSpecialName && (meth.Name.StartsWith("get_", StringComparison.Ordinal) || meth.Name.StartsWith("set_", StringComparison.Ordinal)))
             select meth;

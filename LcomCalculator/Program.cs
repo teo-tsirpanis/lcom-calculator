@@ -66,7 +66,11 @@ namespace LcomCalculator
             if (OutputCsv is null)
                 Console.WriteLine(outputSb);
             else
-                File.WriteAllText(OutputCsv, outputSb.ToString());
+            {
+                var output = Path.GetFullPath(OutputCsv);
+                Console.Error.WriteLine($"Saving output to {output}...");
+                File.WriteAllText(output, outputSb.ToString());
+            }
 
             return 0;
         }
